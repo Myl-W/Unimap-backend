@@ -1,9 +1,101 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
+const User = require("../models/users");
+const { checkBody } = require("../modules/checkBody");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const authenticateToken = require("../modules/auth");
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+// !  Generation de la secret key dans powershell
+// !  [System.Convert]::ToBase64String((1..64 | ForEach-Object {Get-Random -Maximum 256}))
+const SECRET_KEY = process.env.SECRET_KEY;
+router.use("/profile", authenticateToken);
+
+// Inscription
+router.post("/register", (req, res) => {
+  if (!checkBody(req.body, ["username", "email", "password", "nom"])) {
+    return res.json({ result: false, error: "Champs manquants ou vides" });
+  }
+
+  User.findOne({
+    $or: [{ email: req.body.email }, { username: req.body.username }],
+  })
+    .then((existingUser) => {
+      if (existingUser) {
+        return res.json({ result: false, error: "User already exists" });
+      }
+
+      const hash = bcrypt.hashSync(req.body.password, 10);
+
+      const newUser = new User({
+        username: req.body.username,
+        email: req.body.email,
+        password: hash,
+        nom: req.body.nom || null,
+        dateNaissance: req.body.dateNaissance || null,
+        handicap: req.body.handicap || null,
+      });
+
+      newUser.save().then(() => {
+        const token = jwt.sign(
+          { username: newUser.username, email: newUser.email, id: newUser._id },
+          SECRET_KEY,
+          { expiresIn: "1h" }
+        );
+
+        res.json({ result: true, token });
+      });
+    })
+    .catch((err) => {
+      console.error("Signup error:", err);
+      res.status(500).json({ result: false, error: "Internal server error" });
+    });
+});
+
+// Connexion
+router.post("/login", (req, res) => {
+  if (!checkBody(req.body, ["email", "password"])) {
+    return res.json({ result: false, error: "Champs manquants ou vides" });
+  }
+
+  User.findOne({ email: req.body.email.trim().toLowerCase() })
+    .then((user) => {
+      if (
+        !user ||
+        !bcrypt.compareSync(req.body.password.trim(), user.password)
+      ) {
+        return res.json({
+          result: false,
+          error: "Invalid username or password",
+        });
+      }
+
+      const token = jwt.sign(
+        { username: user.username, email: user.email, id: user._id },
+        SECRET_KEY,
+        { expiresIn: "1h" }
+      );
+
+      res.json({
+        result: true,
+        token,
+        userId: user._id,
+        username: user.username,
+        email: user.email,
+      });
+    })
+    .catch((err) => {
+      console.error("Signin error:", err);
+      res.status(500).json({ result: false, error: "Internal server error" });
+    });
+});
+
+router.get("/profile", authenticateToken, (req, res) => {
+  res.json({
+    result: true,
+    message: "Bienvenue " + req.user.username,
+    user: req.user,
+  });
 });
 
 module.exports = router;
