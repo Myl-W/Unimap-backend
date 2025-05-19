@@ -13,12 +13,12 @@ router.use("/profile", authenticateToken);
 
 // Inscription
 router.post("/register", (req, res) => {
-  if (!checkBody(req.body, ["username", "email", "password", "nom"])) {
+  if (!checkBody(req.body, ["firstname", "email", "password"])) {
     return res.json({ result: false, error: "Champs manquants ou vides" });
   }
 
   User.findOne({
-    $or: [{ email: req.body.email }, { username: req.body.username }],
+    $or: [{ email: req.body.email }, { username: req.body.firstname }],
   })
     .then((existingUser) => {
       if (existingUser) {
@@ -28,17 +28,21 @@ router.post("/register", (req, res) => {
       const hash = bcrypt.hashSync(req.body.password, 10);
 
       const newUser = new User({
-        username: req.body.username,
+        firstname: req.body.firstname,
         email: req.body.email,
         password: hash,
-        nom: req.body.nom || null,
-        dateNaissance: req.body.dateNaissance || null,
-        handicap: req.body.handicap || null,
+        lastname: req.body.lastname || null,
+        birthdate: req.body.birthdate || null,
+        disability: req.body.disability || null,
       });
 
       newUser.save().then(() => {
         const token = jwt.sign(
-          { username: newUser.username, email: newUser.email, id: newUser._id },
+          {
+            firstname: newUser.firstname,
+            email: newUser.email,
+            id: newUser._id,
+          },
           SECRET_KEY,
           { expiresIn: "1h" }
         );
@@ -71,7 +75,7 @@ router.post("/login", (req, res) => {
       }
 
       const token = jwt.sign(
-        { username: user.username, email: user.email, id: user._id },
+        { firstname: user.firstname, email: user.email, id: user._id },
         SECRET_KEY,
         { expiresIn: "1h" }
       );
@@ -80,7 +84,7 @@ router.post("/login", (req, res) => {
         result: true,
         token,
         userId: user._id,
-        username: user.username,
+        firstname: user.firstname,
         email: user.email,
       });
     })
@@ -90,6 +94,7 @@ router.post("/login", (req, res) => {
     });
 });
 
+//  ------ Exemple route sécuriser  ----------------
 router.get("/profile", authenticateToken, (req, res) => {
   res.json({
     result: true,
