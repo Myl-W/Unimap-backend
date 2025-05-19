@@ -75,7 +75,13 @@ router.post("/login", (req, res) => {
       }
 
       const token = jwt.sign(
-        { firstname: user.firstname, email: user.email, id: user._id },
+        {
+          firstname: user.firstname,
+          lastname: user.lastname,
+          email: user.email,
+          id: user._id,
+          birthdate: user.birthdate,
+        },
         SECRET_KEY,
         { expiresIn: "1h" }
       );
@@ -85,6 +91,8 @@ router.post("/login", (req, res) => {
         token,
         userId: user._id,
         firstname: user.firstname,
+        lastname: user.lastname,
+        birthdate: user.birthdate,
         email: user.email,
       });
     })
@@ -92,15 +100,6 @@ router.post("/login", (req, res) => {
       console.error("Signin error:", err);
       res.status(500).json({ result: false, error: "Internal server error" });
     });
-});
-
-//  ------ Exemple route sécuriser  ----------------
-router.get("/profile", authenticateToken, (req, res) => {
-  res.json({
-    result: true,
-    message: "Bienvenue " + req.user.username,
-    user: req.user,
-  });
 });
 
 module.exports = router;
