@@ -9,6 +9,7 @@ const userSchema = mongoose.Schema({
   disability: [String],
   home_adress: String,
   work_adress: String,
+  places: [{ type: mongoose.Schema.Types.ObjectId, ref: "places" }],
 });
 
 const User = mongoose.model("users", userSchema);
