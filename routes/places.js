@@ -7,6 +7,7 @@ const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const Place = require("../models/places");
 
+// ---------- Route to upload a photo with Cloudinary ----------
 router.post("/upload", authenticateToken, async (req, res) => {
   // créer un chemin d'adresse temporaite avec un id
   const photoPath = `./tmp/${uniqid()}.jpg`; // il faudra enlever le '.' lors du déploiement sur vercel
@@ -36,6 +37,45 @@ router.post("/upload", authenticateToken, async (req, res) => {
   } else {
     // sinon contient le message d'erreur
     res.json({ result: false, error: resultMove });
+  }
+});
+
+// --------- Route to get all places ----------
+router.get("/places", authenticateToken, async (req, res) => {
+  try {
+    const places = await Place.find();
+    res.json({ result: true, places });
+  } catch (error) {
+    console.error("Error fetching places:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ------------ Route to get a place by ID -------------
+router.get("/place/:id", authenticateToken, async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
+    if (!place) {
+      return res.status(404).json({ error: "Place not found" });
+    }
+    res.json({ result: true, place });
+  } catch (error) {
+    console.error("Error fetching place:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ------------ Route to delete a place by ID -------------
+router.delete("/place/:id", authenticateToken, async (req, res) => {
+  try {
+    const place = await Place.findByIdAndDelete(req.params.id);
+    if (!place) {
+      return res.status(404).json({ error: "Place not found" });
+    }
+    res.json({ result: true, message: "Place deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting place:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
