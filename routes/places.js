@@ -50,7 +50,7 @@ router.get("/places", authenticateToken, async (req, res) => {
   }
 });
 
-// ------------ Route to get a specific place by ID -------------
+// ------------ Route to get a place by ID -------------
 router.get("/place/:id", authenticateToken, async (req, res) => {
   try {
     const place = await Place.findById(req.params.id);
