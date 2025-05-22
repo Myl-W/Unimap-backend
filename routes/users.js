@@ -44,7 +44,7 @@ router.post("/register", (req, res) => {
             id: newUser._id,
           },
           SECRET_KEY,
-          { expiresIn: "1h" }
+          { expiresIn: "7d" } // Token expires in 7 days
         );
 
         res.json({ result: true, token });
