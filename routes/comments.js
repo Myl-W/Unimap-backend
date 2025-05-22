@@ -3,44 +3,64 @@ const router = express.Router();
 
 require('../models/connection');
 const Comment = require('../models/comments');
-const { checkBody } = require('../modules/checkBody');
+const Place = require('../models/places');
 
 // POST /comments : ajouter un commentaire
-router.post('/', (req, res) => {
-    // Vérifie que les deux champs sont bien là
-    if (!checkBody(req.body, ['picture', 'comment'])) {
-        return res.json({ result: false, error: 'Missing or empty fields' });
+router.post('/', async (req, res) => {
+    const { placeId, picture, comment } = req.body;
+
+    if (!placeId || !picture || !comment) {
+        return res.json({ result: false, error: 'Missing fields' });
     }
 
-    // Crée un nouveau commentaire
-    const newComment = new Comment({
-        picture: req.body.picture,
-        comment: req.body.comment,
-    });
+    try {
+        const newComment = new Comment({ picture, comment });
+        const savedComment = await newComment.save();
 
-    // Sauvegarde dans la base
-    newComment.save().then(() => {
-        res.json({ result: true, message: 'Comment added' });
-    });
+        const updatedPlace = await Place.updateOne(
+            { _id: placeId },
+            { $push: { comments: savedComment._id } }
+        );
+
+        if (updatedPlace.modifiedCount === 1) {
+            res.json({ result: true, comment: savedComment });
+        } else {
+            res.json({ result: false, error: 'Place not found' });
+        }
+    } catch (err) {
+        res.json({ result: false, error: err.message });
+    }
 });
 
-router.get('/:picture', (req, res) => {
-    Comment.find({ picture: req.params.picture })
-        .then(data => res.json({ result: true, comments: data }))
-        .catch(err => res.json({ result: false, error: err.message }));
+router.get('/place/:placeId/comments', async (req, res) => {
+    try {
+        const place = await Place.findById(req.params.placeId).populate('comments');
+
+        if (!place) {
+            return res.json({ result: false, error: 'Place not found' });
+        }
+
+        res.json({ result: true, comments: place.comments });
+    } catch (err) {
+        res.json({ result: false, error: err.message });
+    }
 });
 
-router.delete('/:id', (req, res) => {
-    Comment.deleteOne({ _id: req.params.id })
-        .then(deleted => {
-            if (deleted.deletedCount === 1) {
-                res.json({ result: true, message: 'Comment deleted' });
-            } else {
-                res.json({ result: false, error: 'Comment not found' });
-            }
-        })
-        .catch(err => res.json({ result: false, error: err.message }));
-});
+router.delete('/:id', async (req, res) => {
+    try {
+        const deleted = await Comment.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.json({ result: false, error: 'Comment not found' });
 
+        // Supprime la référence du commentaire dans le lieu
+        await Place.updateMany(
+            { comments: req.params.id },
+            { $pull: { comments: req.params.id } }
+        );
+
+        res.json({ result: true, message: 'Comment deleted' });
+    } catch (err) {
+        res.json({ result: false, error: err.message });
+    }
+});
 
 module.exports = router;

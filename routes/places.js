@@ -10,6 +10,7 @@ const Place = require("../models/places");
 router.post("/upload", authenticateToken, async (req, res) => {
   // créer un chemin d'adresse temporaite avec un id
   const photoPath = `./tmp/${uniqid()}.jpg`; // il faudra enlever le '.' lors du déploiement sur vercel
+  console.log('photoPath', photoPath)
   // copier le photoFormFront du front et je le mets dans le dossier /tmp/...
   const resultMove = await req.files.photoFromFront.mv(photoPath);
 
