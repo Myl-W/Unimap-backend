@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const placeSchema = mongoose.Schema({
-  pictures: [String],
+  picture: String,
   signalement: Number,
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "comments" }],
 });
