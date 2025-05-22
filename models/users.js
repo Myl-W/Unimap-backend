@@ -10,6 +10,7 @@ const userSchema = mongoose.Schema({
   home_adress: String,
   work_adress: String,
   places: [{ type: mongoose.Schema.Types.ObjectId, ref: "places" }],
+  favorites: [String],
 });
 
 const User = mongoose.model("users", userSchema);
