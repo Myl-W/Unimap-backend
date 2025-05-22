@@ -7,6 +7,10 @@ const Place = require('../models/places');
 
 // POST /comments : ajouter un commentaire
 router.post('/', async (req, res) => {
+    const alreadyExists = await Comment.findOne({ picture: req.body.picture, comment: req.body.comment });
+    if (alreadyExists) {
+        return res.json({ result: false, error: 'Duplicate comment' });
+    }
     const { placeId, picture, comment } = req.body;
 
     if (!placeId || !picture || !comment) {
