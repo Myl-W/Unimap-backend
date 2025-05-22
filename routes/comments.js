@@ -18,17 +18,21 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        // 1. Crée un nouveau document Comment avec les données reçues (picture et comment)
         const newComment = new Comment({ picture, comment });
+        // 2. Enregistre ce commentaire dans la base MongoDB
         const savedComment = await newComment.save();
-
+        // 3. Met à jour le document Place correspondant en y ajoutant l'ID du commentaire
         const updatedPlace = await Place.updateOne(
-            { _id: placeId },
-            { $push: { comments: savedComment._id } }
+            { _id: placeId },// Critère : on cherche le lieu correspondant à l'ID fourni
+            { $push: { comments: savedComment._id } }// Action : on ajoute l'ObjectId du commentaire dans le tableau comments
         );
-
+        // 4. Vérifie si la mise à jour a bien modifié un document
         if (updatedPlace.modifiedCount === 1) {
+            // ✅ Tout s’est bien passé : on retourne le commentaire enregistré
             res.json({ result: true, comment: savedComment });
         } else {
+            // ❌ Le lieu n’a pas été trouvé : on retourne une erreur
             res.json({ result: false, error: 'Place not found' });
         }
     } catch (err) {
