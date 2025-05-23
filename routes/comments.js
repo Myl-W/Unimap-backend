@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
         // 4. Vérifie si la mise à jour a bien modifié un document
         if (updatedPlace.modifiedCount === 1) {
             // ✅ Tout s’est bien passé : on retourne le commentaire enregistré
-            res.json({ result: true, comment: savedComment });
+            res.json({ result: true, comment: savedComment, picture });
         } else {
             // ❌ Le lieu n’a pas été trouvé : on retourne une erreur
             res.json({ result: false, error: 'Place not found' });
