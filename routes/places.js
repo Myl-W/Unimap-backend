@@ -11,7 +11,7 @@ const Place = require("../models/places");
 router.post("/upload", authenticateToken, async (req, res) => {
   // créer un chemin d'adresse temporaite avec un id
   const photoPath = `./tmp/${uniqid()}.jpg`; // il faudra enlever le '.' lors du déploiement sur vercel
-  console.log('photoPath', photoPath)
+  console.log("photoPath", photoPath);
   // copier le photoFormFront du front et je le mets dans le dossier /tmp/...
   const resultMove = await req.files.photoFromFront.mv(photoPath);
 
@@ -22,9 +22,11 @@ router.post("/upload", authenticateToken, async (req, res) => {
 
     // ---------- Enregistrement en BDD avec l'url de l'image ----------
     const newPlace = new Place({
-      pictures: [resultCloudinary.secure_url],
+      picture: resultCloudinary.secure_url,
       signalement: 0,
       comments: [],
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
     });
 
     const savedPlace = await newPlace.save(); // Attends puis enregistre en BDD
@@ -43,7 +45,10 @@ router.post("/upload", authenticateToken, async (req, res) => {
 // --------- Route to get all places ----------
 router.get("/places", authenticateToken, async (req, res) => {
   try {
-    const places = await Place.find();
+    const places = await Place.find().populate("comments");
+    if (!places) {
+      return res.status(404).json({ error: "No places found" });
+    }
     res.json({ result: true, places });
   } catch (error) {
     console.error("Error fetching places:", error);
@@ -54,7 +59,7 @@ router.get("/places", authenticateToken, async (req, res) => {
 // ------------ Route to get a place by ID -------------
 router.get("/place/:id", authenticateToken, async (req, res) => {
   try {
-    const place = await Place.findById(req.params.id);
+    const place = await Place.findById(req.params.id).populate("comments");
     if (!place) {
       return res.status(404).json({ error: "Place not found" });
     }
@@ -75,6 +80,24 @@ router.delete("/place/:id", authenticateToken, async (req, res) => {
     res.json({ result: true, message: "Place deleted successfully" });
   } catch (error) {
     console.error("Error deleting place:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ------------ Route to increment signalement by place ID-------------
+router.put("/place/:id/signalement", authenticateToken, async (req, res) => {
+  try {
+    const place = await Place.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { signalement: 1 } }, // Increment signalement by 1
+      { new: true } // Return the updated document
+    );
+    if (!place) {
+      return res.status(404).json({ error: "Place not found" });
+    }
+    res.json({ result: true, place });
+  } catch (error) {
+    console.error("Error updating signalement:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
