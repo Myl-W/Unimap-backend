@@ -25,6 +25,8 @@ router.post("/upload", authenticateToken, async (req, res) => {
       picture: resultCloudinary.secure_url,
       signalement: 0,
       comments: [],
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
     });
 
     const savedPlace = await newPlace.save(); // Attends puis enregistre en BDD
