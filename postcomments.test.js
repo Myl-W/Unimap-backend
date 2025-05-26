@@ -1,45 +1,75 @@
+
 const mongoose = require("mongoose");
 const request = require('supertest');
 const app = require('./app'); // Importez votre application Express configurée
-
-// describe('POST /comments', () => {
-//     it('should return 400 if required fields are missing', async () => {
-//         const res = await request(app)
-//             .post('/comments')
-//             .send({
-//                 comment: '',
-//             });
-
-//         expect(res.statusCode).toBe(400);
-//         expect(res.body.result).toBe(false);
-//         expect(res.body.error).toBe('Missing fields');
-//     });
-// });
+const Place = require('./models/places');
+const User = require("./models/users");
+const bcrypt = require("bcrypt");
 
 describe('POST /comments', () => {
+    let token;
+    let placeTest;
+
     beforeAll(async () => {
-        // Connexion à la base de données avant les tests
+
         await mongoose.connect(process.env.CONNECTION_STRING, { connectTimeoutMS: 2000 });
-        console.log("Database connected");
+
+        // Connexion pour obtenir le token
+        // Création d'un utilisateur de test avant les tests
+        const hashedPassword = await bcrypt.hash("testpassword", 10);
+        await User.create({
+            firstname: "Test",
+            email: "test@gmail.com",
+            password: hashedPassword,
+        });
+        const userDatas = await request(app).post("/login").send({
+            email: "test@gmail.com",
+            password: "testpassword",
+        });
+
+        token = userDatas.body.token;
     });
 
     afterAll(async () => {
-        // Déconnexion de la base de données après les tests
+        await User.deleteOne({ email: "test@gmail.com" });
         await mongoose.disconnect();
-        console.log("Database disconnected");
     });
 
-    it('should return 400 if required fields are missing', async () => {
+    beforeEach(async () => {
+        placeTest = await Place.create({
+            name: 'Test Place',
+            address: '123 rue test',
+            comments: []
+        });
+    });
+
+    it('should save a comment only', async () => {
         const res = await request(app)
             .post('/comments')
+            .set('Authorization', `Bearer ${token}`)
             .send({
-                comment: '',
+                picture: 'http://example.com/photo.jpg',
+                comment: 'Unit test comment',
+                placeId: placeTest._id.toString()
             });
 
-        expect(res.statusCode).toBe(400);
-        expect(res.body.result).toBe(false);
-        expect(res.body.error).toBe('Missing fields');
+        expect(res.statusCode).toBe(200);
+        expect(res.body).toHaveProperty('comment');
+        expect(res.body.comment).toHaveProperty('_id');
+        expect(res.body.comment.comment).toBe('Unit test comment');
     });
 
-    // Ajoutez d'autres tests ici
-});
+    it('should update the Place with the new comment ID', async () => {
+        const res = await request(app)
+            .post('/comments')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                picture: 'http://example.com/photo.jpg',
+                comment: 'Linked comment',
+                placeId: placeTest._id.toString()
+            });
+
+        const updatedPlace = await Place.findById(placeTest._id);
+        expect(updatedPlace).not.toBeNull();
+    });
+})
