@@ -1,7 +1,8 @@
-// Importe la bibliothèque "supertest" qui permet de tester des API HTTP de manière simple
 const request = require("supertest");
+const User = require("./models/users");
+const mongoose = require("mongoose");
 
-// Importe l'application Express depuis le fichier "app.js" (ou "app/index.js" selon ton projet)
+// Importe l'application Express depuis le fichier "app.js"
 const app = require("./app");
 
 // Définition d'un test unitaire avec Jest pour vérifier le comportement de la route POST /register
@@ -19,6 +20,13 @@ it("POST /register", async () => {
   // Vérifie que la propriété "result" dans la réponse est vraie (inscription réussie)
   expect(res.body.result).toBe(true);
 
-  // Vérifie que la réponse contient un "token" (souvent utilisé pour l'authentification)
+  // Vérifie que la réponse contient un "token"
   expect(res.body.token).toBeDefined();
+});
+
+// Nettoyage après les tests : suppression de l'utilisateur
+afterAll(async () => {
+  await User.deleteOne({ email: "john@example.com" });
+  await mongoose.disconnect();
+  console.log("Database disconnected");
 });
