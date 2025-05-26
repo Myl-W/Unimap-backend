@@ -24,9 +24,13 @@ describe("POST /login", () => {
   });
 
   afterAll(async () => { //'afterAll' --> la fonction s'exécute une seule fois après tous les test 
+    // suppression de l'utilisateur après le test effectuée 
+    await User.deleteOne({ email: "test@gmail.com" });
     // Déconnexion de la base de données après les tests
     await mongoose.disconnect();
     console.log("Database disconnected");
+    
+
   });
 
   it("doit retourner un token si les identifiants sont valides", async () => {
