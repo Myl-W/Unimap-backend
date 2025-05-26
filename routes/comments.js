@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const authenticateToken = require("../modules/auth");
 
 require('../models/connection');
 const Comment = require('../models/comments');
 const Place = require('../models/places');
 
 // POST /comments : ajouter un commentaire
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
     const { picture, comment, placeId } = req.body;
 
     if (!picture || !comment || !placeId) {
@@ -33,21 +34,19 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.get('/place/:placeId/comments', async (req, res) => {
+router.get('/:placeId', authenticateToken, async (req, res) => {
     try {
-        const place = await Place.findById(req.params.placeId).populate('comments');
+        const place = await Comment.find({ placeId: req.params.placeId });
 
-        if (!place) {
-            return res.json({ result: false, error: 'Place not found' });
-        }
+        console.log("🚀 ~ router.get ~ place:", place)
 
-        res.json({ result: true, comments: place.comments });
+        res.json({ result: true, comments: place });
     } catch (err) {
         res.json({ result: false, error: err.message });
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const deleted = await Comment.findByIdAndDelete(req.params.id);
         if (!deleted) return res.json({ result: false, error: 'Comment not found' });
