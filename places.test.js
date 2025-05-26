@@ -1,29 +1,43 @@
 const request = require("supertest");
 const app = require("./app");
 const mongoose = require("mongoose");
+const User = require("./models/users");
+const bcrypt = require("bcrypt");
 
 describe("GET /places", () => {
-  // Connexion à la base de données avant tous les tests
+  let token;
+  // -------- Connexion à la BDD et création d'un utilisateur avant les tests --------
   beforeAll(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.CONNECTION_STRING, {
-        useNewUrlParser: true, // idem
-        useUnifiedTopology: true, //lignes de configuration pour éviter les avertissements de dépréciation
-      });
-    }
+    await mongoose.connect(process.env.CONNECTION_STRING, {
+      connectTimeoutMS: 2000,
+    });
+    console.log("Database connected");
+
+    // Création d'un utilisateur de test
+    await request(app).post("/register").send({
+      firstname: "Test",
+      lastname: "User",
+      email: "test.user@gmail.com",
+      password: "password",
+    });
+
+    // Connexion pour obtenir le token
+    const userDatas = await request(app).post("/login").send({
+      email: "test.user@gmail.com",
+      password: "password",
+    });
+
+    token = userDatas.body.token;
   });
 
-  // Déconnexion de la base de données après tous les tests
+  // Nettoyage après les tests : suppression de l'utilisateur
   afterAll(async () => {
-    await mongoose.connection.close();
+    await User.deleteOne({ email: "test.user@gmail.com" });
+    await mongoose.disconnect();
+    console.log("Database disconnected");
   });
 
   it("doit retourner la liste des lieux avec un token valide", async () => {
-    const userDatas = await request(app).post("/login").send({
-      email: "mttpiselli@gmail.com",
-      password: "password",
-    });
-    const token = userDatas.body.token;
     const res = await request(app)
       .get("/places")
       .set("Authorization", `Bearer ${token}`);
