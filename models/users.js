@@ -7,8 +7,8 @@ const userSchema = mongoose.Schema({
   password: { type: String, required: true },
   birthdate: Date,
   disability: [String],
-  home_adress: String,
-  work_adress: String,
+  homeAddress: String,
+  workAddress: String,
   places: [{ type: mongoose.Schema.Types.ObjectId, ref: "places" }],
   favorites: [String],
 });

@@ -9,6 +9,7 @@ const authenticateToken = require("../modules/auth");
 // !  Generation de la secret key dans powershell
 // !  [System.Convert]::ToBase64String((1..64 | ForEach-Object {Get-Random -Maximum 256}))
 const SECRET_KEY = process.env.SECRET_KEY;
+// Vérification de la présence du token pour les routes suivantes
 router.use("/profile", authenticateToken);
 
 // Inscription de l'utilisateur
@@ -18,6 +19,7 @@ router.post("/register", (req, res) => {
   }
 
   User.findOne({
+  // Vérifie si l'email ou le nom d'utilisateur existe déjà
     $or: [{ email: req.body.email }, { username: req.body.firstname }],
   })
     .then((existingUser) => {
@@ -83,7 +85,7 @@ router.post("/login", (req, res) => {
           birthdate: user.birthdate,
         },
         SECRET_KEY,
-        { expiresIn: "1h" }
+        { expiresIn: "7d" }
       );
 
       res.json({
@@ -171,6 +173,32 @@ router.get("/favorites", authenticateToken, async (req, res) => {
   } catch (err) {
     console.error("Favorites retrieval error:", err);
     res.status(500).json({ result: false, error: "Internal server error" });
+  }
+});
+
+// Mettre à jour l'adresse
+router.put('/address', authenticateToken, async (req, res) => {
+    console.log("BODY:", req.body, "USER ID:", req.user.id);
+  const { homeAddress, workAddress } = req.body;
+  const update = {};
+  if (homeAddress !== undefined) update.homeAddress = homeAddress;
+  if (workAddress !== undefined) update.workAddress = workAddress;
+
+  try {
+    const user = await User.findByIdAndUpdate(req.user.id, update, { new: true });
+    res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Récupérer les adresses à la connexion
+router.get('/address', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
