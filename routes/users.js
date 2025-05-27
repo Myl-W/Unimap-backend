@@ -5,6 +5,11 @@ const { checkBody } = require("../modules/checkBody");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authenticateToken = require("../modules/auth");
+const fileUpload = require("express-fileupload");
+const cloudinary = require("cloudinary").v2;
+const uniqid = require("uniqid");
+const fs = require("fs");
+
 
 // !  Generation de la secret key dans powershell
 // !  [System.Convert]::ToBase64String((1..64 | ForEach-Object {Get-Random -Maximum 256}))
@@ -96,6 +101,7 @@ router.post("/login", (req, res) => {
         lastname: user.lastname,
         birthdate: user.birthdate,
         email: user.email,
+        profilePhoto: user.profilePhoto,
       });
     })
     .catch((err) => {
@@ -199,6 +205,31 @@ router.get('/address', authenticateToken, async (req, res) => {
     res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress });
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+
+router.post("/profile/photo", authenticateToken, async (req, res) => {
+  if (!req.files || !req.files.photo) {
+    return res.status(400).json({ result: false, error: "Aucune image envoyée" });
+  }
+  const tempFilePath = `./tmp/${uniqid()}.jpg`;
+  const resultMove = await req.files.photo.mv(tempFilePath);
+  if (resultMove) {
+    return res.status(500).json({ result: false, error: resultMove });
+  }
+    const resultCloudinary = await cloudinary.uploader.upload(tempFilePath);
+  fs.unlinkSync(tempFilePath); // Supprimer le fichier temporaire
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { profilePhoto: resultCloudinary.secure_url }, // Mettre à jour l'URL de la photo de profil
+      { new: true } // Retourner l'utilisateur mis à jour
+    );
+    res.json({ result: true, photo: user.profilePhoto });
+  } catch (err) {
+    console.error("Error updating profile photo:", err);
+    res.status(500).json({ result: false, error: "Internal server error" });
   }
 });
 
