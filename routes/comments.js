@@ -9,8 +9,7 @@ const Place = require('../models/places');
 // POST /comments : ajouter un commentaire
 router.post('/', authenticateToken, async (req, res) => {
     const { picture, comment, placeId } = req.body;
-
-    // Vérification des champs obligatoires
+    // Vérifie que tous les champs nécessaires sont présents
     if (!picture || !comment || !placeId) {
         return res.status(400).json({ result: false, error: 'Missing fields' });
     }
