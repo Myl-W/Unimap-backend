@@ -5,7 +5,6 @@ const uniqid = require("uniqid");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const Place = require("../models/places");
-// const mongoose = require("mongoose");
 
 router.post("/upload", authenticateToken, async (req, res) => {
   const photoPath = `./tmp/${uniqid()}.jpg`;
