@@ -52,8 +52,18 @@ router.post("/register", (req, res) => {
           SECRET_KEY,
           { expiresIn: "7d" } // Token expires in 7 days
         );
-
-        res.json({ result: true, token });
+        // Récupérer explicitement toutes les données de l'utilisateur
+        res.json({
+          result: true,
+          token,
+          userId: newUser._id,
+          firstname: newUser.firstname,
+          lastname: newUser.lastname,
+          birthdate: newUser.birthdate,
+          email: newUser.email,
+          username: newUser.username || null,
+          profilePhoto: newUser.profilePhoto || null,
+        });
       });
     })
     .catch((err) => {
@@ -266,7 +276,7 @@ router.put("/profile/update", authenticateToken, async (req, res) => {
     }
 
     // Vérifie si l'email est déjà utilisé par un autre utilisateur
-    if (email && email !== currentUser.email) {         
+    if (email && email !== currentUser.email) {
       const existingUser = await User.findOne({ email, _id: { $ne: userId } }); //'$ne' --> Not equal
       if (existingUser) {
         return res.status(400).json({
