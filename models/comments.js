@@ -9,6 +9,7 @@ const commentSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, // type ObjectId MongoDB
     ref: 'places'
   },// nom du modèle de référence
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
 }, {
   timestamps: true, // ✅ createdAt et updatedAt ajoutés automatiquement//Pour savoir quand un commentaire a été posté
 });

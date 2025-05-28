@@ -9,6 +9,10 @@ const Place = require("../models/places");
 // POST /comments : ajouter un commentaire
 router.post("/", authenticateToken, async (req, res) => {
   const { picture, comment, placeId } = req.body;
+  console.log("📥 Commentaire reçu avec placeId :", placeId);
+  const userId = req.user.id;
+  console.log("🚀 ~ router.post ~ userId:", userId)
+
   // Vérifie que tous les champs nécessaires sont présents
   if (!comment || !placeId) {
     return res.status(400).json({ result: false, error: "Missing fields" });
@@ -16,7 +20,7 @@ router.post("/", authenticateToken, async (req, res) => {
 
   try {
     // Création d'un nouveau commentaire avec les données fournies
-    const newComment = new Comment({ picture, comment, placeId });
+    const newComment = new Comment({ picture, comment, placeId, userId });
 
     // Sauvegarde du commentaire dans la base de données
     const savedComment = await newComment.save();
@@ -43,7 +47,7 @@ router.post("/", authenticateToken, async (req, res) => {
 router.get("/:placeId", authenticateToken, async (req, res) => {
   try {
     // Recherche de tous les commentaires ayant le placeId spécifié
-    const place = await Comment.find({ placeId: req.params.placeId });
+    const place = await Comment.find({ placeId: req.params.placeId }).populate('userId');
 
     // Retour des commentaires trouvés
     res.json({ result: true, comments: place });
