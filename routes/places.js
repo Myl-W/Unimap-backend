@@ -1,11 +1,11 @@
 var express = require("express");
 var router = express.Router();
 const authenticateToken = require("../modules/auth");
-
 const uniqid = require("uniqid");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const Place = require("../models/places");
+// const mongoose = require("mongoose");
 
 // ---------- Route to upload a photo with Cloudinary ----------
 router.post("/upload", authenticateToken, async (req, res) => {
@@ -56,6 +56,11 @@ router.get("/places", authenticateToken, async (req, res) => {
 
 // ------------ Route to get a place by ID -------------
 router.get("/place/:id", authenticateToken, async (req, res) => {
+  // const { id } = req.params;
+  // // Vérifie que l'ID est un ObjectId valide
+  // if (!mongoose.Types.ObjectId.isValid(id)) {
+  //   return res.status(400).json({ error: "Invalid place ID" });
+  // }
   try {
     const place = await Place.findById(req.params.id).populate("comments");
     if (!place) {
