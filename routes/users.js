@@ -9,6 +9,7 @@ const fileUpload = require("express-fileupload");
 const cloudinary = require("cloudinary").v2;
 const uniqid = require("uniqid");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 // !  Generation de la secret key dans powershell
 // !  [System.Convert]::ToBase64String((1..64 | ForEach-Object {Get-Random -Maximum 256}))
@@ -174,21 +175,99 @@ router.post("/addFavorites", authenticateToken, (req, res) => {
 
 // Récupération des favoris de l'utilisateur
 router.get("/favorites", authenticateToken, async (req, res) => {
-  const userEmail = req.user.email; // l'email extrait du token
-
   try {
-    // Récupération de l'utilisateur à partir de l'email
-    const user = await User.findOne({ email: userEmail });
+    const user = await User.findById(req.user.id);
     if (!user) {
-      return res.json({ result: false, error: "Invalid user" });
+      return res.status(404).json({ result: false, error: "User not found" });
+    }
+    res.json({ result: true, favorites: user.favorites });
+  } catch (error) {
+    console.error("Error fetching favorites:", error);
+    res.status(500).json({ result: false, error: "Internal server error" });
+  }
+});
+
+// Ajouter un favori
+router.post("/favorites", authenticateToken, async (req, res) => {
+  try {
+    const { name, address } = req.body;
+
+    if (!name || !address) {
+      return res
+        .status(400)
+        .json({ result: false, error: "Name and address are required" });
     }
 
-    res.json({
-      result: true,
-      favorites: user.favorites,
-    });
-  } catch (err) {
-    console.error("Favorites retrieval error:", err);
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ result: false, error: "User not found" });
+    }
+
+    const favorite = {
+      _id: new mongoose.Types.ObjectId(),
+      name,
+      address,
+    };
+    user.favorites.push(favorite);
+    await user.save();
+
+    res.json({ result: true, favorite });
+  } catch (error) {
+    console.error("Error adding favorite:", error);
+    res.status(500).json({ result: false, error: "Internal server error" });
+  }
+});
+
+// Modifier un favori
+router.put("/favorites/:index", authenticateToken, async (req, res) => {
+  try {
+    const { name, address } = req.body;
+    const index = parseInt(req.params.index);
+
+    if (!name || !address) {
+      return res
+        .status(400)
+        .json({ result: false, error: "Name and address are required" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ result: false, error: "User not found" });
+    }
+
+    if (index < 0 || index >= user.favorites.length) {
+      return res
+        .status(404)
+        .json({ result: false, error: "Favorite not found" });
+    }
+
+    user.favorites[index] = { name, address };
+    await user.save();
+
+    res.json({ result: true, favorite: user.favorites[index] });
+  } catch (error) {
+    console.error("Error updating favorite:", error);
+    res.status(500).json({ result: false, error: "Internal server error" });
+  }
+});
+
+// Supprimer un favori
+router.delete("/favorites/:favoriteId", authenticateToken, async (req, res) => {
+  try {
+    const favoriteId = req.params.favoriteId;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ result: false, error: "User not found" });
+    }
+
+    // Utilise pull pour supprimer le favori avec l'ID correspondant
+    user.favorites.pull({ _id: favoriteId });
+    await user.save();
+
+    res.json({ result: true });
+  } catch (error) {
+    console.error("Error deleting favorite:", error);
     res.status(500).json({ result: false, error: "Internal server error" });
   }
 });
