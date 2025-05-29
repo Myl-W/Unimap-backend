@@ -47,8 +47,7 @@ router.post("/", authenticateToken, async (req, res) => {
 router.get("/:placeId", authenticateToken, async (req, res) => {
   try {
     // Recherche de tous les commentaires ayant le placeId spécifié
-    const place = await Comment.find({ placeId: req.params.placeId }).populate('userId');
-
+    const place = await Comment.find({ placeId: req.params.placeId }).populate('userId').sort({ createdAt: -1 });
     // Retour des commentaires trouvés
     res.json({ result: true, comments: place });
   } catch (err) {
