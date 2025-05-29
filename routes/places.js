@@ -30,7 +30,7 @@ router.post("/upload", authenticateToken, async (req, res) => {
 
     let savedPlace;
 
-    if (existingPlace) {
+    if (existingPlace && req.body.handicap === existingPlace.handicap) {
       // Supprimer l'ancienne image sur Cloudinary
       existingPlace.picture = resultCloudinary.secure_url;
       savedPlace = await existingPlace.save();
@@ -41,6 +41,7 @@ router.post("/upload", authenticateToken, async (req, res) => {
         comments: [],
         latitude: req.body.latitude,
         longitude: req.body.longitude,
+        handicap: req.body.handicap,
       });
       savedPlace = await newPlace.save();
     }
