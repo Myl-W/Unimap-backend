@@ -11,7 +11,7 @@ router.post("/", authenticateToken, async (req, res) => {
   const { picture, comment, placeId } = req.body;
   console.log("📥 Commentaire reçu avec placeId :", placeId);
   const userId = req.user.id;
-  console.log("🚀 ~ router.post ~ userId:", userId)
+  console.log("🚀 ~ router.post ~ userId:", userId);
 
   // Vérifie que tous les champs nécessaires sont présents
   if (!comment || !placeId) {
@@ -20,10 +20,16 @@ router.post("/", authenticateToken, async (req, res) => {
 
   try {
     // Création d'un nouveau commentaire avec les données fournies
-    const newComment = new Comment({ picture, comment, placeId, userId });
+    const newComment = new Comment({
+      picture,
+      comment,
+      placeId,
+      userId,
+    });
 
     // Sauvegarde du commentaire dans la base de données
     const savedComment = await newComment.save();
+    await savedComment.populate("userId");
 
     // Mise à jour du lieu correspondant pour y associer ce commentaire
     const updatedPlace = await Place.updateOne(
@@ -47,7 +53,9 @@ router.post("/", authenticateToken, async (req, res) => {
 router.get("/:placeId", authenticateToken, async (req, res) => {
   try {
     // Recherche de tous les commentaires ayant le placeId spécifié
-    const place = await Comment.find({ placeId: req.params.placeId }).populate('userId').sort({ createdAt: -1 });
+    const place = await Comment.find({ placeId: req.params.placeId })
+      .populate("userId")
+      .sort({ createdAt: -1 });
     // Retour des commentaires trouvés
     res.json({ result: true, comments: place });
   } catch (err) {

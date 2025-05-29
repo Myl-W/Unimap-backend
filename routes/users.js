@@ -221,8 +221,8 @@ router.post("/favorites", authenticateToken, async (req, res) => {
 // Modifier un favori
 router.put("/favorites/:index", authenticateToken, async (req, res) => {
   try {
-    const { name, address } = req.body;
-    const index = parseInt(req.params.index);
+    const { name, address } = req.body; // Récupère le nom et l'adresse du favori à modifier
+    const index = parseInt(req.params.index); // Récupère l'index du favori à modifier
 
     if (!name || !address) {
       return res
@@ -235,16 +235,16 @@ router.put("/favorites/:index", authenticateToken, async (req, res) => {
       return res.status(404).json({ result: false, error: "User not found" });
     }
 
-    if (index < 0 || index >= user.favorites.length) {
+    if (index < 0 || index >= user.favorites.length) { // Vérifie si l'index est valide
       return res
         .status(404)
         .json({ result: false, error: "Favorite not found" });
     }
 
-    user.favorites[index] = { name, address };
+    user.favorites[index] = { name, address }; // Met à jour le favori avec le nouveau nom et l'adresse
     await user.save();
 
-    res.json({ result: true, favorite: user.favorites[index] });
+    res.json({ result: true, favorite: user.favorites[index] }); // Retourne le favori mis à jour
   } catch (error) {
     console.error("Error updating favorite:", error);
     res.status(500).json({ result: false, error: "Internal server error" });
@@ -254,7 +254,7 @@ router.put("/favorites/:index", authenticateToken, async (req, res) => {
 // Supprimer un favori
 router.delete("/favorites/:favoriteId", authenticateToken, async (req, res) => {
   try {
-    const favoriteId = req.params.favoriteId;
+    const favoriteId = req.params.favoriteId; // Récupère l'ID du favori à supprimer  
 
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -274,16 +274,16 @@ router.delete("/favorites/:favoriteId", authenticateToken, async (req, res) => {
 
 // Mettre à jour l'adresse
 router.put("/address", authenticateToken, async (req, res) => {
-  const { homeAddress, workAddress } = req.body;
+  const { homeAddress, workAddress } = req.body; // Récupère les adresses de l'utilisateur
   const update = {};
-  if (homeAddress !== undefined) update.homeAddress = homeAddress;
-  if (workAddress !== undefined) update.workAddress = workAddress;
+  if (homeAddress !== undefined) update.homeAddress = homeAddress; // Met à jour l'adresse de l'utilisateur
+  if (workAddress !== undefined) update.workAddress = workAddress; // Met à jour l'adresse de l'utilisateur
 
   try {
     const user = await User.findByIdAndUpdate(req.user.id, update, {
       new: true,
     });
-    res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress });
+    res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress }); // Retourne les adresses mises à jour
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }
@@ -293,24 +293,25 @@ router.put("/address", authenticateToken, async (req, res) => {
 router.get("/address", authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress });
+    res.json({ homeAddress: user.homeAddress, workAddress: user.workAddress }); // Retourne les adresses de l'utilisateur
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
+// Route pour mettre à jour la photo de profil
 router.post("/profile/photo", authenticateToken, async (req, res) => {
   if (!req.files || !req.files.photo) {
     return res
       .status(400)
       .json({ result: false, error: "Aucune image envoyée" });
   }
-  const tempFilePath = `./tmp/${uniqid()}.jpg`;
-  const resultMove = await req.files.photo.mv(tempFilePath);
+  const tempFilePath = `./tmp/${uniqid()}.jpg`; // Chemin temporaire pour l'image
+  const resultMove = await req.files.photo.mv(tempFilePath); // Déplace l'image vers le chemin temporaire
   if (resultMove) {
     return res.status(500).json({ result: false, error: resultMove });
   }
-  const resultCloudinary = await cloudinary.uploader.upload(tempFilePath);
+  const resultCloudinary = await cloudinary.uploader.upload(tempFilePath); // Téléverse l'image vers Cloudinary
   fs.unlinkSync(tempFilePath); // Supprimer le fichier temporaire
   try {
     const user = await User.findByIdAndUpdate(
