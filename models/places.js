@@ -6,6 +6,7 @@ const placeSchema = mongoose.Schema({
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "comments" }],
   latitude: Number,
   longitude: Number,
+  handicap: String,
 });
 
 const Place = mongoose.model("places", placeSchema);
