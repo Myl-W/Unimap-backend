@@ -14,16 +14,24 @@ router.post("/upload", authenticateToken, async (req, res) => {
     const resultCloudinary = await cloudinary.uploader.upload(photoPath);
     fs.unlinkSync(photoPath);
 
+    const TOLERANCE = 0.0001; // Tolerance de 4 chiffres après la virgule pour la latitude et la longitude
+
+    // Assure que ce sont des nombres
+    const lat = parseFloat(req.body.latitude);
+    const lng = parseFloat(req.body.longitude);
+
     // Cherche une place existante avec les mêmes coordonnées
     const existingPlace = await Place.findOne({
-      latitude: req.body.latitude,
-      longitude: req.body.longitude,
+      // Vérifie si la latitude et la longitude sont dans la plage de tolérance
+      // exemple: 10 - 1 = 9, 10 + 1 = 11, tout se qui est entre 9 et 11 est le meme point
+      latitude: { $gte: lat - TOLERANCE, $lte: lat + TOLERANCE }, // $gte = "greater than or equal" → supérieur ou égal
+      longitude: { $gte: lng - TOLERANCE, $lte: lng + TOLERANCE }, // $lte = "less than or equal" → inférieur ou égal
     });
 
     let savedPlace;
 
     if (existingPlace) {
-      // Optionnel : supprimer l'ancienne image sur Cloudinary ici
+      // Supprimer l'ancienne image sur Cloudinary
       existingPlace.picture = resultCloudinary.secure_url;
       savedPlace = await existingPlace.save();
     } else {
