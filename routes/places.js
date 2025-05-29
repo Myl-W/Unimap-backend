@@ -35,12 +35,29 @@ router.post("/upload", authenticateToken, async (req, res) => {
       existingPlace.picture = resultCloudinary.secure_url;
       savedPlace = await existingPlace.save();
     } else {
+      let adjustedLat = lat;
+      let adjustedLng = lng;
+
+      if (existingPlace) {
+        const OFFSET = 0.0001;
+
+        const seed = Math.random() * 10000; // On génère un nombre aléatoire pour créer une direction unique
+
+        const angle = (seed % 360) * (Math.PI / 180); // On transforme ce nombre en un angle (entre 0° et 360°), converti en radians
+
+        const radius = (Math.random() * OFFSET) / 2; // On choisit une petite distance aléatoire autour du point (max = OFFSET/2)
+
+        adjustedLat += radius * Math.cos(angle); // On décale légèrement la latitude selon l’angle choisi
+
+        adjustedLng += radius * Math.sin(angle); // On décale légèrement la longitude selon l’angle choisi
+      }
+
       const newPlace = new Place({
         picture: resultCloudinary.secure_url,
         signalement: 0,
         comments: [],
-        latitude: req.body.latitude,
-        longitude: req.body.longitude,
+        latitude: adjustedLat,
+        longitude: adjustedLng,
         handicap: req.body.handicap,
       });
       savedPlace = await newPlace.save();
