@@ -18,7 +18,7 @@ const userSchema = mongoose.Schema({
   homeAddress: String,
   workAddress: String,
   places: [{ type: mongoose.Schema.Types.ObjectId, ref: "places" }],
-  favorites: [favoriteSchema],
+  favorites: [favoriteSchema], // Liste des favoris de l'utilisateur
 });
 
 const User = mongoose.model("users", userSchema);
