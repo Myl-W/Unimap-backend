@@ -308,7 +308,7 @@ router.post("/profile/photo", authenticateToken, async (req, res) => {
       .status(400)
       .json({ result: false, error: "Aucune image envoyée" });
   }
-  const tempFilePath = `./tmp/${uniqid()}.jpg`; // Chemin temporaire pour l'image
+  const tempFilePath = `/tmp/${uniqid()}.jpg`; // Chemin temporaire pour l'image
   const resultMove = await req.files.photo.mv(tempFilePath); // Déplace l'image vers le chemin temporaire
   if (resultMove) {
     return res.status(500).json({ result: false, error: resultMove });
