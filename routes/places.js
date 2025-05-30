@@ -7,14 +7,14 @@ const fs = require("fs");
 const Place = require("../models/places");
 
 router.post("/upload", authenticateToken, async (req, res) => {
-  const photoPath = `./tmp/${uniqid()}.jpg`;
-  const resultMove = await req.files.photoFromFront.mv(photoPath);
+  const photoPath = `./tmp/${uniqid()}.jpg`; // Chemin temporaire pour stocker l'image téléchargée
+  const resultMove = await req.files.photoFromFront.mv(photoPath); // Déplace le fichier téléchargé vers le chemin temporaire
 
   if (!resultMove) {
     const resultCloudinary = await cloudinary.uploader.upload(photoPath);
-    fs.unlinkSync(photoPath);
+    fs.unlinkSync(photoPath); // Supprime le fichier temporaire après l'upload sur Cloudinary
 
-    const TOLERANCE = 0.0001; // Tolerance de 4 chiffres après la virgule pour la latitude et la longitude
+    const TOLERANCE = 0.0001; // Tolerance de 4 chiffres après la virgule pour la latitude et la longitude (~ 11 mètres)
 
     // Assure que ce sont des nombres
     const lat = parseFloat(req.body.latitude);
@@ -24,14 +24,14 @@ router.post("/upload", authenticateToken, async (req, res) => {
     const existingPlace = await Place.findOne({
       // Vérifie si la latitude et la longitude sont dans la plage de tolérance
       // exemple: 10 - 1 = 9, 10 + 1 = 11, tout se qui est entre 9 et 11 est le meme point
-      latitude: { $gte: lat - TOLERANCE, $lte: lat + TOLERANCE }, // $gte = "greater than or equal" → supérieur ou égal
-      longitude: { $gte: lng - TOLERANCE, $lte: lng + TOLERANCE }, // $lte = "less than or equal" → inférieur ou égal
+      latitude: { $gte: lat - TOLERANCE, $lte: lat + TOLERANCE }, // methode mongoose $gte = "greater than or equal" → supérieur ou égal
+      longitude: { $gte: lng - TOLERANCE, $lte: lng + TOLERANCE }, // methode mongoose $lte = "less than or equal" → inférieur ou égal
     });
 
     let savedPlace;
 
     if (existingPlace && req.body.handicap === existingPlace.handicap) {
-      // Supprimer l'ancienne image sur Cloudinary
+      // Remplace l'ancienne image par la nouvelle
       existingPlace.picture = resultCloudinary.secure_url;
       savedPlace = await existingPlace.save();
     } else {
@@ -39,6 +39,7 @@ router.post("/upload", authenticateToken, async (req, res) => {
       let adjustedLng = lng;
 
       if (existingPlace) {
+        // Si une place existe déjà, on ajuste légèrement les coordonnées pour éviter la superposition
         const OFFSET = 0.0001;
 
         const seed = Math.random() * 10000; // On génère un nombre aléatoire pour créer une direction unique
@@ -120,7 +121,7 @@ router.put("/place/:id/signalement", authenticateToken, async (req, res) => {
   try {
     const place = await Place.findByIdAndUpdate(
       req.params.id,
-      { $inc: { signalement: 1 } }, // Increment signalement by 1
+      { $inc: { signalement: 1 } }, // methode mongoose $inc pour incrementer signalement de 1
       { new: true } // Return the updated document
     );
     if (!place) {

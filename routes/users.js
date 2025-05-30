@@ -5,7 +5,6 @@ const { checkBody } = require("../modules/checkBody");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authenticateToken = require("../modules/auth");
-const fileUpload = require("express-fileupload");
 const cloudinary = require("cloudinary").v2;
 const uniqid = require("uniqid");
 const fs = require("fs");
@@ -14,11 +13,9 @@ const mongoose = require("mongoose");
 // !  Generation de la secret key dans powershell
 // !  [System.Convert]::ToBase64String((1..64 | ForEach-Object {Get-Random -Maximum 256}))
 const SECRET_KEY = process.env.SECRET_KEY;
-// Vérification de la présence du token pour les routes suivantes
-router.use("/profile", authenticateToken);
 
 // Inscription de l'utilisateur
-router.post("/register", (req, res) => {
+router.post("/register", authenticateToken, (req, res) => {
   if (!checkBody(req.body, ["firstname", "email", "password"])) {
     return res.json({ result: false, error: "Champs manquants ou vides" });
   }
@@ -32,19 +29,20 @@ router.post("/register", (req, res) => {
         return res.json({ result: false, error: "User already exists" });
       }
 
-      const hash = bcrypt.hashSync(req.body.password, 10);
+      const hash = bcrypt.hashSync(req.body.password, 10); // 10 est le nombre de tours de hachage
 
       const newUser = new User({
         firstname: req.body.firstname,
         email: req.body.email,
         password: hash,
-        lastname: req.body.lastname || null,
-        birthdate: req.body.birthdate || null,
+        lastname: req.body.lastname,
+        birthdate: req.body.birthdate,
         disability: req.body.disability || null,
       });
 
       newUser.save().then(() => {
         const token = jwt.sign(
+          // Génération du token JWT
           {
             firstname: newUser.firstname,
             email: newUser.email,
@@ -74,7 +72,7 @@ router.post("/register", (req, res) => {
 });
 
 // Connexion de l'utilisateur
-router.post("/login", (req, res) => {
+router.post("/login", authenticateToken, (req, res) => {
   if (!checkBody(req.body, ["email", "password"])) {
     return res.json({ result: false, error: "Champs manquants ou vides" });
   }
@@ -93,6 +91,7 @@ router.post("/login", (req, res) => {
 
       // Récupérer explicitement toutes les données de l'utilisateur
       const token = jwt.sign(
+        // Génération du token JWT
         {
           firstname: user.firstname,
           lastname: user.lastname,
@@ -124,8 +123,8 @@ router.post("/login", (req, res) => {
 
 // Ajout d'un favoris de l'utilisateur
 router.post("/addFavorites", authenticateToken, (req, res) => {
-  const userEmail = req.user.email; // l'email extrait du token
-  const favoriteItem = req.body.favorite; // l'élément à ajouter aux favoris
+  const userEmail = req.user.email; // req.user provient du middleware authenticateToken
+  const favoriteItem = req.body.favorite;
 
   if (!favoriteItem) {
     return res.status(400).json({ result: false, error: "Missing favorite" });
@@ -153,7 +152,7 @@ router.post("/addFavorites", authenticateToken, (req, res) => {
         .then((updatedUser) => {
           res.json({
             result: true,
-            favorites: updatedUser.favorites,
+            favorites: updatedUser.favorites, // Retourne la liste mise à jour des favoris
           });
         })
         .catch((err) => {
@@ -204,12 +203,12 @@ router.post("/favorites", authenticateToken, async (req, res) => {
     }
 
     const favorite = {
-      _id: new mongoose.Types.ObjectId(),
+      _id: new mongoose.Types.ObjectId(), // Génère un nouvel ObjectId pour le favori
       name,
       address,
     };
     user.favorites.push(favorite);
-    await user.save();
+    await user.save(); // Enregistre le favori dans la base de données
 
     res.json({ result: true, favorite });
   } catch (error) {
@@ -235,7 +234,9 @@ router.put("/favorites/:index", authenticateToken, async (req, res) => {
       return res.status(404).json({ result: false, error: "User not found" });
     }
 
-    if (index < 0 || index >= user.favorites.length) { // Vérifie si l'index est valide
+    if (index < 0 || index >= user.favorites.length) {
+      // A tester
+      // Vérifie si l'index est valide
       return res
         .status(404)
         .json({ result: false, error: "Favorite not found" });
@@ -254,7 +255,7 @@ router.put("/favorites/:index", authenticateToken, async (req, res) => {
 // Supprimer un favori
 router.delete("/favorites/:favoriteId", authenticateToken, async (req, res) => {
   try {
-    const favoriteId = req.params.favoriteId; // Récupère l'ID du favori à supprimer  
+    const favoriteId = req.params.favoriteId; // Récupère l'ID du favori à supprimer
 
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -302,6 +303,7 @@ router.get("/address", authenticateToken, async (req, res) => {
 // Route pour mettre à jour la photo de profil
 router.post("/profile/photo", authenticateToken, async (req, res) => {
   if (!req.files || !req.files.photo) {
+    // Vérifie si une photo a été envoyée
     return res
       .status(400)
       .json({ result: false, error: "Aucune image envoyée" });
@@ -344,7 +346,7 @@ router.put("/profile/update", authenticateToken, async (req, res) => {
       workAddress,
       disability,
     } = req.body;
-    const userId = req.user.id; // ID de l'utilisateur extrait du token
+    const userId = req.user.id; // ID de l'utilisateur extrait du module authentificate token
 
     // Recherche de l'utilisateur dans la base de données
     const currentUser = await User.findById(userId);
@@ -389,7 +391,7 @@ router.put("/profile/update", authenticateToken, async (req, res) => {
     if (workAddress) currentUser.workAddress = workAddress;
     if (disability) currentUser.disability = disability;
 
-    // Le username peut être null ou une valeur
+    // Le username peut être null ou contenir une valeur
     currentUser.username = username;
 
     // Gestion spéciale du mot de passe
@@ -423,7 +425,7 @@ router.put("/profile/update", authenticateToken, async (req, res) => {
     await currentUser.save();
 
     // Prépare la réponse en enlevant le mot de passe
-    const userResponse = currentUser.toObject();
+    const userResponse = currentUser.toObject(); // Convertit le document Mongoose en objet JavaScript
     delete userResponse.password;
 
     // Génère un nouveau token avec les informations mises à jour

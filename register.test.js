@@ -1,17 +1,14 @@
 const request = require("supertest");
 const User = require("./models/users");
 const mongoose = require("mongoose");
-
-// Importe l'application Express depuis le fichier "app.js"
 const app = require("./app");
 
-// Définition d'un test unitaire avec Jest pour vérifier le comportement de la route POST /register
 it("POST /register", async () => {
-  // Envoie une requête POST à la route /register avec un corps JSON contenant les données de l'utilisateur
   const res = await request(app).post("/register").send({
-    firstname: "John", // Prénom de l'utilisateur à enregistrer
-    email: "john@example.com", // Email de l'utilisateur à enregistrer
-    password: "azerty123", // Mot de passe de l'utilisateur à enregistrer
+    firstname: "John",
+    lastname: "Doe",
+    email: "john@example.com",
+    password: "azerty123",
   });
 
   // Vérifie que le code de statut HTTP de la réponse est bien 200 (OK)
