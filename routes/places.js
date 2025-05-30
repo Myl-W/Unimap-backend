@@ -7,7 +7,7 @@ const fs = require("fs");
 const Place = require("../models/places");
 
 router.post("/upload", authenticateToken, async (req, res) => {
-  const photoPath = `./tmp/${uniqid()}.jpg`; // Chemin temporaire pour stocker l'image téléchargée
+  const photoPath = `/tmp/${uniqid()}.jpg`; // Chemin temporaire pour stocker l'image téléchargée
   const resultMove = await req.files.photoFromFront.mv(photoPath); // Déplace le fichier téléchargé vers le chemin temporaire
 
   if (!resultMove) {
