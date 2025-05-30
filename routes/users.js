@@ -15,7 +15,7 @@ const mongoose = require("mongoose");
 const SECRET_KEY = process.env.SECRET_KEY;
 
 // Inscription de l'utilisateur
-router.post("/register", authenticateToken, (req, res) => {
+router.post("/register", (req, res) => {
   if (!checkBody(req.body, ["firstname", "email", "password"])) {
     return res.json({ result: false, error: "Champs manquants ou vides" });
   }
@@ -72,7 +72,7 @@ router.post("/register", authenticateToken, (req, res) => {
 });
 
 // Connexion de l'utilisateur
-router.post("/login", authenticateToken, (req, res) => {
+router.post("/login", (req, res) => {
   if (!checkBody(req.body, ["email", "password"])) {
     return res.json({ result: false, error: "Champs manquants ou vides" });
   }
