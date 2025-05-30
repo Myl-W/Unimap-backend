@@ -9,9 +9,8 @@ const Place = require("../models/places");
 // POST /comments : ajouter un commentaire
 router.post("/", authenticateToken, async (req, res) => {
   const { picture, comment, placeId } = req.body;
-  console.log("📥 Commentaire reçu avec placeId :", placeId);
-  const userId = req.user.id;
-  console.log("🚀 ~ router.post ~ userId:", userId);
+
+  const userId = req.user.id; // req.user.id fait référence au module auth.js(L.23) authenticateToken
 
   // Vérifie que tous les champs nécessaires sont présents
   if (!comment || !placeId) {
@@ -39,7 +38,6 @@ router.post("/", authenticateToken, async (req, res) => {
 
     // Si le lieu a bien été mis à jour (il existe et a été modifié)
     if (updatedPlace.modifiedCount === 1) {
-      // ✅ Tout s’est bien passé : on retourne le commentaire enregistré
       res.json({ result: true, comment: savedComment, picture });
     } else {
       res.status(404).json({ result: false, error: "Place not found" });
@@ -55,7 +53,7 @@ router.get("/:placeId", authenticateToken, async (req, res) => {
     // Recherche de tous les commentaires ayant le placeId spécifié
     const place = await Comment.find({ placeId: req.params.placeId })
       .populate("userId")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }); // Tri par date de création décroissante
     // Retour des commentaires trouvés
     res.json({ result: true, comments: place });
   } catch (err) {

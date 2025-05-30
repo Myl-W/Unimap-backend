@@ -5,16 +5,18 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
-var indexRouter = require("./routes/index");
+// Importation des routes
 var usersRouter = require("./routes/users");
 var placesRouter = require("./routes/places");
-var commentsRouter = require('./routes/comments');
+var commentsRouter = require("./routes/comments");
 
 var app = express();
 
+// Cors (Cross-Origin Resource Sharing) pour autoriser les requêtes depuis d'autres origines
 const cors = require("cors");
 app.use(cors());
 
+// Envoi de fichiers
 const fileUpload = require("express-fileupload");
 app.use(fileUpload());
 
@@ -24,7 +26,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
+// Utilisation des routes
 app.use("/", usersRouter);
 app.use("/", placesRouter);
 app.use("/comments", commentsRouter);

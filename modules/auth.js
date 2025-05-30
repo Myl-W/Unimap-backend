@@ -7,8 +7,8 @@ function authenticateToken(req, res, next) {
   // Vérifie si le token est présent dans les en-têtes de la requête
   const authHeader =
     req.headers["authorization"] || req.headers["Authorization"];
-    // Récupère le header Authorization (insensible à la casse) de la requête.
-  const token = authHeader?.split(" ")[1];
+  // Récupère le header Authorization (insensible à la casse) de la requête.
+  const token = authHeader?.split(" ")[1]; // .split(" ")[1] pour récupérer le token après "Bearer"
 
   // Si le token n'est pas présent, retourne une erreur 401
   if (!token) {
